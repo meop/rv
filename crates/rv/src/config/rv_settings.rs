@@ -6,7 +6,7 @@ use config::{
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
 pub enum Error {
-    #[error("Multiple config files found: {0:?}")]
+    #[error("Multiple config files found: {}", .0.join(", "))]
     MultipleConfigFiles(Vec<String>),
 
     #[error("Error building configuration: {0}")]
@@ -294,10 +294,20 @@ rv{
         let result = RvSettings::collect_single_file(&paths);
         assert!(result.is_err());
 
-        if let Err(Error::MultipleConfigFiles(files)) = result {
+        if let Err(error) = result {
+            let Error::MultipleConfigFiles(files) = &error else {
+                panic!("Expected MultipleConfigFiles error");
+            };
             assert_eq!(files.len(), 2);
             assert!(files.contains(&format!("{}.kdl", base1_trimmed)));
             assert!(files.contains(&format!("{}.kdl", base2_trimmed)));
+
+            let rendered = error.to_string();
+            assert_eq!(
+                rendered,
+                format!("Multiple config files found: {base1_trimmed}.kdl, {base2_trimmed}.kdl")
+            );
+            assert!(!rendered.contains('['));
         } else {
             panic!("Expected MultipleConfigFiles error");
         }

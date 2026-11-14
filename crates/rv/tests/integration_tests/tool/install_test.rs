@@ -36,6 +36,7 @@ fn test_tool_install_twice() {
     );
 
     output.assert_stdout_contains(&expected_info_message);
+    output.assert_stdout_contains("Installed tool executables: indirect");
 
     releases_mock.assert();
     ruby_mock.assert();

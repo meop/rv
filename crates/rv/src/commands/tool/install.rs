@@ -191,7 +191,10 @@ pub(crate) async fn install(
                 fs::remove_dir_all(install_path).unwrap();
                 return Err(Error::NoMatchingExecutable(gem_name.clone()));
             } else {
-                println!("Installed tool executables: {executables_installed:?}");
+                println!(
+                    "Installed tool executables: {}",
+                    executables_installed.join(", ")
+                );
             }
         }
         Err(error) => {
