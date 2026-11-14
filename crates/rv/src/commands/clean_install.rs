@@ -1281,8 +1281,8 @@ impl<'i> DownloadedRubygems<'i> {
         match self.unpack_tarball_inner(args) {
             Err(error) => {
                 // Print out nice Miette reports
-                if matches!(error, UnpackError::YamlParsing(_)) {
-                    println!("{error:?}");
+                if let UnpackError::YamlParsing(report) = &error {
+                    eprintln!("{report:?}");
                 };
 
                 Err(Error::UnpackError(error))

@@ -27,6 +27,49 @@ fn test_clean_install_download_test_gem() {
 }
 
 #[test]
+fn test_clean_install_reports_broken_gem_metadata() {
+    let mut test = RvTest::new();
+
+    test.create_ruby_dir("ruby-4.0.1");
+
+    test.use_gemfile("../rv-lockfile/tests/inputs/Gemfile.testsource");
+    test.use_lockfile("../rv-lockfile/tests/inputs/Gemfile.testsource.lock");
+    test.replace_source("http://gems.example.com", &test.server_url());
+
+    // A gem whose metadata.gz holds YAML that does not parse.
+    let broken_gem = fs_err::read("../rv-gem-package/tests/fixtures/broken-metadata.gem").unwrap();
+    let mock = test
+        .mock_tarball_download(
+            &test.gem_package_download_path("test-gem-1.0.0.gem"),
+            &broken_gem,
+        )
+        .create();
+
+    let output = test.ci(&["--verbose"]);
+
+    mock.assert();
+    output.assert_failure();
+
+    // The parse report goes to stderr on its own. Before the fix it was printed
+    // on stdout wrapped in the enum's Debug: `YamlParsing(  × YAML parsing error …)`.
+    let stdout = output.stdout();
+    assert!(
+        !stdout.contains("YamlParsing("),
+        "expected no wrapped report on stdout, got: {stdout}"
+    );
+
+    let stderr = output.stderr();
+    assert!(
+        stderr.contains("× YAML parsing error"),
+        "expected the metadata parse report on stderr, got: {stderr}"
+    );
+    assert!(
+        stderr.contains("{{{ not: [yaml"),
+        "expected the report to show the offending source, got: {stderr}"
+    );
+}
+
+#[test]
 fn test_clean_install_input_validation() {
     let mut test = RvTest::new();
 
